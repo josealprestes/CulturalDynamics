@@ -6,7 +6,7 @@
 > [Limites metodológicos](#limites-metodologicos).
 
 ![License](https://img.shields.io/badge/license-MIT-blue)
-![Version](https://img.shields.io/badge/version-1.3.2-blue)
+![Version](https://img.shields.io/badge/version-1.3.3-blue)
 ![Tests](https://img.shields.io/badge/tests-268%2F268-brightgreen)
 ![Gates](https://img.shields.io/badge/gates-9%2F9-brightgreen)
 ![ORCID](https://img.shields.io/badge/ORCID-0000--0001--8686--5360-green)
@@ -123,6 +123,9 @@ máquina o opt-in é explícito:
 ```bash
 CD_HOST=0.0.0.0 julia --project=. src/web_server.jl     # ou: ... src/web_server.jl 8080 0.0.0.0
 ```
+
+Uma simulação roda por vez: requisições concorrentes recebem `429` em vez de
+disputar o processo.
 
 ---
 

@@ -26,6 +26,11 @@ const LIMITS = (
     mutation = (0.0, 1.0),
 )
 
+# Admissão: uma simulação por vez. O custo por requisição já é limitado, mas N
+# clientes simultâneos somam; sem admissão, quem chega junto divide o processo
+# até travar. O excedente recebe 429 em vez de entrar numa fila invisível.
+const SIM_LOCK = ReentrantLock()
+
 """
     validate_params(p) -> Vector{String}
 
@@ -69,6 +74,15 @@ function handle_index(req::HTTP.Request)
 end
 
 function handle_simulate(req::HTTP.Request)
+    # Recusa pelo tamanho declarado antes de carregar o corpo na memória.
+    declared = HTTP.header(req, "Content-Length", "")
+    if !isempty(declared)
+        n = tryparse(Int, declared)
+        if n !== nothing && n > MAX_BODY_BYTES
+            return error_response(413, "corpo da requisição acima de $(MAX_BODY_BYTES) bytes")
+        end
+    end
+
     body = String(req.body)
     if sizeof(body) > MAX_BODY_BYTES
         return error_response(413, "corpo da requisição acima de $(MAX_BODY_BYTES) bytes")
@@ -88,6 +102,10 @@ function handle_simulate(req::HTTP.Request)
         return error_response(400, "parâmetros fora do contrato"; fields=bad)
     end
 
+    if !trylock(SIM_LOCK)
+        return error_response(429, "já existe uma simulação em andamento; tente novamente em instantes")
+    end
+
     n = Int(params.grid_size)
     epsilon = haskey(params, :epsilon) ? Float64(params.epsilon) : 0.0
     mutation = haskey(params, :mutation) ? Float64(params.mutation) : 0.0
@@ -105,7 +123,13 @@ function handle_simulate(req::HTTP.Request)
         )
 
         model = build_model(config)
-        step!(model, Int(params.steps))
+        # Passos um a um com yield: `step!(model, n)` roda um laço CPU-bound que não
+        # devolve o controle ao scheduler; com ele a admissão acima nunca chega a
+        # responder 429 — a segunda chamada apenas ficaria esperando o fim da primeira.
+        for _ in 1:Int(params.steps)
+            step!(model, 1)
+            yield()
+        end
 
         region_data = count_regions(model)
 
@@ -135,6 +159,8 @@ function handle_simulate(req::HTTP.Request)
         # tipo e campo da exceção Julia não são informação que a API deva expor.
         println("ERROR in simulate: ", sprint(showerror, e))
         return error_response(500, "erro interno na simulação")
+    finally
+        unlock(SIM_LOCK)
     end
 end
 

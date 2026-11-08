@@ -6,6 +6,23 @@ versionamento semântico.
 
 ## [Unreleased]
 
+## [1.3.3] — 2026-11-08
+
+### Security
+
+- `web/index.html` deixa de importar a fonte Inter do Google Fonts. O README afirma
+  que o projeto não precisa de internet para abrir a demo, mas renderizar a página
+  disparava requisição a um terceiro; agora a página usa a pilha de fontes do sistema
+  e abre offline de verdade.
+- `POST /simulate` ganha controle de admissão: uma simulação por vez, com `429` no
+  excedente. Limitar cada requisição não impedia vários clientes concorrentes de
+  somarem carga no mesmo processo. Os passos rodam um a um com `yield()`, senão o
+  laço CPU-bound segura o scheduler e a segunda chamada só esperaria o fim da primeira
+  em vez de receber `429`.
+- Corpo acima de 4 KB é recusado pelo `Content-Length` declarado, antes de o corpo
+  ser carregado na memória.
+
+
 ## [1.3.2] — 2026-11-08
 
 ### Security
