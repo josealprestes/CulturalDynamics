@@ -6,6 +6,21 @@ versionamento semântico.
 
 ## [Unreleased]
 
+## [1.3.2] — 2026-11-08
+
+### Security
+
+- `src/web_server.jl` escuta em **127.0.0.1** por padrão, com opt-in explícito por
+  `CD_HOST` (ou segundo argumento) e aviso no console quando a interface é de rede:
+  antes subia em `0.0.0.0` sem autenticação enquanto o README anunciava localhost.
+- `POST /simulate` valida o contrato da entrada — grade 5–101, F 1–15, Q 2–10,
+  passos 1–2000, épsilon 0–1, mutação 0–1 — e responde 400 com o campo violado;
+  corpo acima de 4 KB responde 413. Antes a grade vinha crua do JSON e uma
+  requisição pequena pedia uma alocação que derrubava o processo.
+- A resposta 500 devolve mensagem genérica; o detalhe da exceção fica no log do
+  servidor, em vez de ir no corpo para o cliente.
+
+
 ## [1.3.1] — 2026-11-08
 
 ### Added
