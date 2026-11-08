@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+title: "CulturalDynamics"
+message: "If you use this software, please cite it as below."
+type: software
+version: 1.0.0
+authors:
+  - family-names: Prestes
+    given-names: José Augusto de Lima
+    orcid: "https://orcid.org/0000-0001-8686-5360"
+repository-code: "https://github.com/josealprestes/CulturalDynamics"
+license: MIT
+preferred-citation:
+  type: software
+  title: "CulturalDynamics: A Julia Framework for Compliance Simulation"
+  authors:
+    - family-names: Prestes
+      given-names: José Augusto de Lima
+  year: 2026
+  url: "https://github.com/josealprestes/CulturalDynamics"
+  notes: "Projeto de pesquisa em ABM; disciplina IA006J, FEEC/Unicamp. DOI do corpus (Zenodo) pendente."

@@ -1,0 +1,64 @@
+# Julia
+Manifest.toml
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+docs/build/
+docs/site/
+
+# Julia artifacts / compiled
+deps/deps.jl
+deps/build.log
+
+# Coverage / profiling
+lcov.info
+*.prof
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.julia/
+
+# Benchmark results / outputs
+benchmark/results/
+*.csv.bak
+
+# Web / build artifacts
+web/build/
+node_modules/
+dist/
+
+# Experiment outputs
+results/
+output/
+*.jld2
+*.h5
+
+# Temp
+*.tmp
+*.bak
+__pycache__/
+
+# Private material (not part of the public repository)
+paper/
+AGENTS.md
+HANDOFF.md
+.commandcode/
+docs/research/review_*.md
+docs/research/redteam_results.md
+docs/research/AUDIT_*.md
+docs/research/manuscript_*.md
+docs/research/meanfield_sketch.md
+docs/research/ROADMAP.md
+docs/research/ROADMAP_v4.md
+docs/research/skills-audit.md
+docs/research/ZENODO_DEPOSIT.md
+docs/research/mutation_F7.md
