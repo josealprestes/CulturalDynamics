@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CulturalDynamics — Demo IA006J (Axelrod visual)</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: #0f0c29; color: #e0e0e0; padding: 20px; }
+  h1 { font-size: 1.5em; margin-bottom: 4px; }
+  .sub { color: #888; font-size: .85em; margin-bottom: 16px; }
+  .layout { display: flex; gap: 20px; max-width: 1100px; margin: 0 auto; flex-wrap: wrap; }
+  .panel { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; padding: 18px; }
+  .controls { width: 300px; display: flex; flex-direction: column; gap: 12px; }
+  .view { flex: 1; min-width: 320px; }
+  label { font-size: .8em; color: #aaa; display: flex; justify-content: space-between; }
+  label b { color: #8ea2ff; }
+  input[type=range] { width: 100%; }
+  .btnrow { display: flex; gap: 8px; flex-wrap: wrap; }
+  button { flex: 1; padding: 10px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: .9em; }
+  #play { background: linear-gradient(135deg,#667eea,#764ba2); color: #fff; }
+  #step, #step-stop, #reset { background: #2a2a4a; color: #ccc; }
+  .preset { background: #1c1c34; color: #8ea2ff; font-weight: 400; font-size: .78em; }
+  .stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 12px; }
+  .stat { background: rgba(255,255,255,.05); border-radius: 8px; padding: 10px; text-align: center; }
+  .stat .v { font-size: 1.5em; font-weight: 700; color: #f093fb; }
+  .stat .l { font-size: .72em; color: #888; }
+  canvas { width: 100%; max-width: 520px; image-rendering: pixelated; border-radius: 8px; background: #111; display: block; margin: 0 auto; }
+  .hist { display: flex; align-items: flex-end; gap: 1px; height: 60px; margin-top: 10px; background: #111; border-radius: 8px; padding: 6px; }
+  .hist div { flex: 1; background: #667eea; min-height: 2px; border-radius: 1px; }
+  .foot { max-width: 1100px; margin: 14px auto 0; color: #777; font-size: .78em; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+  .tab { background: #2a2a4a; color: #ccc; font-weight: 400; font-size: .82em; padding: 8px 14px; }
+  .tab.active { background: linear-gradient(135deg,#667eea,#764ba2); color: #fff; font-weight: 600; }
+  .tabpanel { display: none; font-size: .84em; line-height: 1.55; color: #ccc; }
+  .tabpanel.active { display: block; }
+  .tabpanel h3 { font-size: .95em; color: #8ea2ff; margin: 10px 0 4px; }
+  .tabpanel h3:first-child { margin-top: 0; }
+  .tabpanel table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: .85em; }
+  .tabpanel th, .tabpanel td { text-align: left; padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,.08); }
+  .tabpanel th { color: #8ea2ff; font-weight: 600; }
+  .tabpanel code { background: rgba(255,255,255,.08); padding: 1px 5px; border-radius: 4px; font-size: .9em; }
+  #narrator { margin-top: 12px; background: rgba(102,126,234,.08); border-left: 3px solid #667eea; border-radius: 0 8px 8px 0; padding: 10px 14px; font-size: .84em; line-height: 1.55; color: #ccc; min-height: 3.2em; }
+  #narrator b { color: #8ea2ff; }
+</style>
+</head>
+<body>
+<h1>CulturalDynamics — difusão cultural tipo Axelrod</h1>
+<p class="sub">Demo IA006J · FEEC/Unicamp · 100% navegador, sem servidor · cada agente tem F traços (níveis 1–Q); a cada passo, um agente copia um traço do vizinho se parecidos o bastante (ε)</p>
+<div class="layout">
+  <div class="panel controls">
+    <div><label>F — dimensões culturais <b id="vF">5</b></label>
+      <input type="range" id="pF" min="2" max="10" value="5" oninput="P.F=+this.value;document.getElementById('vF').textContent=this.value;reset()"></div>
+    <div><label>Q — níveis por dimensão <b id="vQ">3</b></label>
+      <input type="range" id="pQ" min="2" max="10" value="3" oninput="P.Q=+this.value;document.getElementById('vQ').textContent=this.value;reset()"></div>
+    <div><label>ε — confiança limitada <b id="vE">0.30</b></label>
+      <input type="range" id="pE" min="0" max="1" step="0.05" value="0.3" oninput="P.eps=+this.value;document.getElementById('vE').textContent=(+this.value).toFixed(2)"></div>
+    <div><label>N — lado do grid <b id="vN">31</b></label>
+      <input type="range" id="pN" min="11" max="61" step="5" value="31" oninput="P.N=+this.value;document.getElementById('vN').textContent=this.value;reset()"></div>
+    <div><label>Velocidade (passos/frame) <b id="vS">5</b></label>
+      <input type="range" id="pS" min="1" max="40" value="5" oninput="P.speed=+this.value;document.getElementById('vS').textContent=this.value"></div>
+    <div class="btnrow">
+      <button id="play" onclick="toggle()">▶ Rodar</button>
+      <button id="step" onclick="advance(P.speed*10);drawMetrics(false)">+passos</button>
+      <button id="step-stop" onclick="running=false;document.getElementById('play').textContent='▶ Rodar';drawMetrics(true)">■ Parar e concluir</button>
+      <button id="reset" onclick="reset()">↺ Zerar</button>
+    </div>
+    <div class="btnrow">
+      <button class="preset" onclick="preset(5,3,0.3)">Clássico F5Q3 ε.3</button>
+      <button class="preset" onclick="preset(10,10,0.3)">Fragmentado</button>
+    </div>
+    <div class="btnrow">
+      <button class="preset" onclick="preset(5,3,0.0)">Convergente ε0</button>
+      <button class="preset" onclick="preset(5,5,0.3)">Mosaico F5Q5</button>
+    </div>
+  </div>
+  <div class="panel view">
+    <div class="stats">
+      <div class="stat"><div class="v" id="sStep">0</div><div class="l">passos</div></div>
+      <div class="stat"><div class="v" id="sAdh">—</div><div class="l">aderência média</div></div>
+      <div class="stat"><div class="v" id="sReg">—</div><div class="l">regiões culturais</div></div>
+      <div class="stat"><div class="v" id="sBig">—</div><div class="l">maior região %</div></div>
+    </div>
+    <canvas id="cv" width="465" height="465"></canvas>
+    <div class="hist" id="hist"></div>
+    <div id="narrator" aria-live="polite">Aperte <b>▶ Rodar</b> para começar.</div>
+    <div style="margin-top:14px">
+      <div class="tabs">
+        <button class="tab active" onclick="showTab('guia',this)">📖 Guia</button>
+        <button class="tab" onclick="showTab('cenarios',this)">🎬 Cenários</button>
+        <button class="tab" onclick="showTab('medidas',this)">📏 O que é medido</button>
+        <button class="tab" onclick="showTab('sobre',this)">ℹ️ Sobre</button>
+      </div>
+      <div class="tabpanel active" id="tab-guia">
+        <h3>O que é isto?</h3>
+        Cada quadradinho é um <b>agente</b> (pense: um profissional de saúde). Cada agente tem
+        <b>F traços culturais</b> (ex.: 5 dimensões de uma norma), cada um num <b>nível 1–Q</b>
+        (1 = nunca adere, Q = sempre adere). A cor mostra o 1º traço: vermelho = baixo, verde = alto.
+        <h3>A regra (Axelrod + confiança limitada)</h3>
+        A cada passo: sorteia-se um agente e um vizinho (cima/baixo/esquerda/direita).
+        Eles só interagem se a fração de traços iguais for ≥ <b>ε</b>; se interagirem,
+        o agente copia <b>um</b> traço divergente do vizinho (com prob. = similaridade).
+        É homofilia + influência social: parecidos ficam mais parecidos.
+        <h3>O que observar</h3>
+        O grid começa embaralhado e <b>organiza-se sozinho em blocos de cor</b> — as
+        <b>regiões culturais</b>. Nenhum agente "quis" formar blocos: é emergência das regras locais.
+      </div>
+      <div class="tabpanel" id="tab-cenarios">
+        <table>
+          <tr><th>Cenário</th><th>Parâmetros</th><th>O que acontece</th><th>Por quê</th></tr>
+          <tr><td><b>Clássico</b></td><td><code>F5 Q3 ε0.3</code></td><td>Mosaico de centenas de regiões; maior bloco ~30%</td><td>Configuração de referência do estudo (mede fragmentação típica)</td></tr>
+          <tr><td><b>Convergente</b></td><td><code>F5 Q3 ε0</code></td><td>Tende a monocultura; em 31² a coesão é lenta</td><td>Sem barreira de similaridade, qualquer contato copia → consenso</td></tr>
+          <tr><td><b>Fragmentado</b></td><td><code>F10 Q10 ε0.3</code></td><td>~900 micro-regiões; ainda há cópias raras</td><td>Muitas dimensões/níveis (F/Q altos) + ε moderado → polarização</td></tr>
+          <tr><td><b>Mosaico</b></td><td><code>F5 Q5 ε0.3</code></td><td>Blocos médios, nem consenso nem poeira</td><td>Meio-termo: mostra a transição entre ordem e fragmentação</td></tr>
+        </table>
+        <p style="margin-top:8px;color:#888;font-size:.85em">O caso extremo <code>F10 Q10 ε0.6</code> é quase congelado: a chance de dois agentes serem similares o bastante é ~0,01%, então quase nenhuma cópia acontece. O preset usa ε0.3 para mostrar a fragmentação em movimento; suba ε para ver o limite.</p>
+        Roteiro sugerido: Clássico → Convergente (zera entre eles) → Fragmentado. Contraste consenso × mosaico × poeira.
+      </div>
+      <div class="tabpanel" id="tab-medidas">
+        <table>
+          <tr><th>Métrica</th><th>O que é</th><th>Leitura prática</th></tr>
+          <tr><td><b>Passos</b></td><td>Interações que viraram cópia</td><td>Tempo simulado decorrido</td></tr>
+          <tr><td><b>Aderência média</b></td><td>Fração média de traços no nível máximo</td><td>Quanto da norma é seguida (0% ninguém, 100% todos sempre)</td></tr>
+          <tr><td><b>Regiões culturais</b></td><td>Blocos conexos de agentes idênticos nos F traços</td><td>Fragmentação: poucas = cultura coesa, muitas = cada um por si</td></tr>
+          <tr><td><b>Maior região %</b></td><td>Fração de agentes no maior bloco</td><td>Dominância da cultura majoritária</td></tr>
+        </table>
+        No projeto real (Julia/Agents.jl), estas mesmas métricas são calibradas contra dados de
+        higiene das mãos (~38% de aderência média, queda de 8,5pp por turno) e verificadas por
+        74 checks automáticos.
+      </div>
+      <div class="tabpanel" id="tab-sobre">
+        <h3>Sobre — o que a difusão cultural permite medir</h3>
+        Esta demo é a porta de entrada do <b>CulturalDynamics</b> (Julia/Agents.jl):
+        um ABM tipo Axelrod calibrado em momentos públicos de higiene das mãos
+        (média ~38%, queda ~8,5pp/turno). Cada medida abaixo tem obra de origem,
+        o que ela captura e um exemplo concreto — do grid desta página ou do corpus do projeto.
+        <h3>1. Fragmentação — nº de regiões (Axelrod 1997)</h3>
+        <i>R. Axelrod, "The dissemination of culture", J. Conflict Resolution 41(2), 1997.</i><br>
+        Mede <b>convergência local + polarização global</b>: agentes parecidos convergem,
+        mas o grid parte-se em blocos mutuamente estranhos. Previsão: Q alto fragmenta, ε alto fragmenta.<br>
+        Ex.: Clássico F5Q3 ε0.3 → centenas de regiões (mosaico); Convergente ε0 → tende a 1–2 (lento);
+        Fragmentado F10Q10 ε0.3 → ~900–960 (cada um do seu jeito; ε0.6 é o limite quase congelado).
+        <h3>2. Dominância — share da maior região (Castellano et al. 2000)</h3>
+        <i>C. Castellano, M. Marsili &amp; A. Vespignani, PRL 85(16), 2000 — transição ordem–desordem.</i><br>
+        Mede o <b>tamanho relativo do bloco majoritário</b> (<code>&lt;S_max&gt;/N</code>).<br>
+        Ex.: com cópia ligada, maior bloco 28,8%; sem cópia (ablação), 1,2% —
+        a difusão é o que cria o bloco grande (projeto: 29,0 vs 210,8 regiões, p=0.0002).
+        <h3>3. Acordo entre simuladores (Axelrod &amp; Cohen; Axtell et al. 1996)</h3>
+        <i>R. Axtell, R. Axelrod, J. Epstein &amp; M. Cohen, "Aligning simulation models", CMOT 1(2), 1996;
+        R. Axelrod &amp; M. Cohen, Harnessing Complexity, 1999.</i><br>
+        Mede <b>alinhamento distribucional</b>: o mesmo processo em dois motores dá a mesma distribuição.<br>
+        Ex.: Julia 340,6 vs Mesa 336,3 regiões, Δ≈1,5% — acordo, sem claim de velocidade.
+        <h3>4. Normas e dose-resposta (Conte &amp; Castelfranchi 1999; Sharpanskykh 2016)</h3>
+        <i>R. Conte &amp; C. Castelfranchi, Artif. Intell. Law 7(4), 1999; A. Sharpanskykh &amp; R. Haest, Appl. Intell. 45(3), 2016.</i><br>
+        Mede <b>taxa de adoção e resposta a intervenção</b> (curva côncava, heterogeneidade entre unidades).<br>
+        Ex.: treino 0 → 0,36; 0,01 → 0,85; 0,04 → 0,99 (retornos decrescentes, Hornbeck 2011);
+        impor fadigas 0,001/0,003/0,005 abre o sd entre unidades de 0,059 → 0,109 (p=0.0009) —
+        o análogo de "cada hospital tem sua cultura" (Lash et al. 2017).
+        <h3>5. Nível e declínio de campo (Dai et al. 2014; Lash 2019; WHO 2009)</h3>
+        <i>H. Dai et al., J. Appl. Psychol. 100(3), 2015; M. Lash et al., J. Healthcare Informat. Res. 3(4), 2019.</i><br>
+        Mede <b>aderência média e queda por turno</b>, os alvos da calibração.<br>
+        Ex.: o fit acha fadiga 0,0031 que reproduz queda 0,090 e nível 0,418
+        (alvos 0,085/0,415, RMSE 0,004 ≤ teto 0,05).
+      </div>
+    </div>
+  </div>
+</div>
+<p class="foot">Cores = nível do 1º traço (vermelho=baixo → verde=alto). Regiões = blocos conexos de agentes idênticos nos F traços. ε alto → fragmenta (cada um do seu jeito); ε=0 → converge (monocultura). Aderência média ≈ fração de traços no nível máximo. Modelo: CulturalDynamics (Julia/Agents.jl); esta página reimplementa o núcleo Axelrod em JS para visualização.</p>
+<script>
+const P = { F: 5, Q: 3, eps: 0.3, N: 31, speed: 5 };
+let A, step = 0, running = false, hist = [];
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+
+function reset() {
+  const { F, Q, N } = P;
+  A = new Uint8Array(N * N * F);
+  for (let i = 0; i < A.length; i++) A[i] = 1 + Math.floor(Math.random() * Q);
+  step = 0; hist = [];
+  running = false;
+  document.getElementById('play').textContent = '▶ Rodar';
+  draw();
+}
+function idx(x, y, f) { return (y * P.N + x) * P.F + f; }
+function overlap(a, b) {
+  let s = 0;
+  for (let f = 0; f < P.F; f++) if (A[a * P.F + f] === A[b * P.F + f]) s++;
+  return s / P.F;
+}
+function advance(n) {
+  const { N, F, Q, eps } = P;
+  let copies = 0;
+  for (let k = 0; k < n; k++) {
+    const x = Math.floor(Math.random() * N), y = Math.floor(Math.random() * N);
+    const d = [[1,0],[-1,0],[0,1],[0,-1]][Math.floor(Math.random() * 4)];
+    const nx = x + d[0], ny = y + d[1];
+    if (nx < 0 || ny < 0 || nx >= N || ny >= N) continue;
+    const a = y * N + x, b = ny * N + nx;
+    const s = overlap(a, b);
+    if (s < eps || s >= 1) continue;
+    if (Math.random() > s) continue;
+    const diff = [];
+    for (let f = 0; f < F; f++) if (A[a * F + f] !== A[b * F + f]) diff.push(f);
+    if (!diff.length) continue;
+    // copia 1 traço divergente do vizinho:
+    const pick = diff[Math.floor(Math.random() * diff.length)];
+    A[a * F + pick] = A[b * F + pick];
+    step++; copies++;
+  }
+  return copies;
+}
+function regions() {
+  const { N, F } = P;
+  const seen = new Int32Array(N * N).fill(-1);
+  const key = i => { let s = ''; for (let f = 0; f < F; f++) s += A[i * F + f]; return s; };
+  let nreg = 0, big = 0;
+  for (let i = 0; i < N * N; i++) {
+    if (seen[i] >= 0) continue;
+    const k = key(i), q = [i]; seen[i] = nreg; let sz = 0;
+    while (q.length) {
+      const c = q.pop(), cx = c % N, cy = Math.floor(c / N); sz++;
+      for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+        const nx = cx + dx, ny = cy + dy;
+        if (nx < 0 || ny < 0 || nx >= N || ny >= N) continue;
+        const j = ny * N + nx;
+        if (seen[j] < 0 && key(j) === k) { seen[j] = nreg; q.push(j); }
+      }
+    }
+    nreg++; if (sz > big) big = sz;
+  }
+  return { nreg, big };
+}
+function adherence() {
+  let s = 0;
+  for (let i = 0; i < A.length; i++) s += (A[i] - 1) / (P.Q - 1);
+  return s / A.length;
+}
+function draw() {
+  drawGrid();
+  drawMetrics(false);
+}
+function drawGrid() {
+  const { N, Q } = P, px = cv.width / N;
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const v = (A[(y * N + x) * P.F] - 1) / Math.max(Q - 1, 1);
+    let r, g, b;
+    if (v < .5) { const t = v * 2; r = 229; g = Math.floor(95 + 55 * t); b = 95; }
+    else { const t = (v - .5) * 2; r = Math.floor(229 - 134 * t); g = 150 + Math.floor(79 * t); b = 95 - 45 * t; }
+    ctx.fillStyle = `rgb(${r},${g},${b})`;
+    ctx.fillRect(Math.floor(x * px), Math.floor(y * px), Math.ceil(px), Math.ceil(px));
+  }
+}
+function drawMetrics(final) {
+  const { N } = P;
+  const adh = adherence(), { nreg, big } = regions();
+  const bigPct = 100 * big / (N * N);
+  document.getElementById('sStep').textContent = step.toLocaleString('pt-BR');
+  document.getElementById('sAdh').textContent = (adh * 100).toFixed(1) + '%';
+  document.getElementById('sReg').textContent = nreg;
+  document.getElementById('sBig').textContent = bigPct.toFixed(1) + '%';
+  hist.push(nreg); if (hist.length > 120) hist.shift();
+  const h = document.getElementById('hist');
+  const mx = Math.max(...hist, 1);
+  h.innerHTML = hist.map(v => `<div style="height:${Math.max(4, 100 * v / mx)}%"></div>`).join('');
+  narrate(adh, nreg, bigPct, final);
+}
+function narrate(adh, nreg, bigPct, final) {
+  const { N } = P;
+  const el = document.getElementById('narrator');
+  const frag = nreg <= 3 ? 'quase consenso: pouquíssimas culturas'
+    : nreg < N * N * 0.15 ? 'mosaico: blocos convivendo'
+    : 'poeira: quase cada agente com sua cultura';
+  const dom = bigPct >= 80 ? `a maior ocupa <b>${bigPct.toFixed(0)}%</b> do grid (dominância)`
+    : bigPct >= 25 ? `a maior ocupa <b>${bigPct.toFixed(0)}%</b>`
+    : `a maior ocupa só <b>${bigPct.toFixed(0)}%</b> (ninguém domina)`;
+  if (step === 0) { el.innerHTML = `Grid embaralhado: aderência <b>${(adh*100).toFixed(0)}%</b> (acaso), ${frag}. Aperte <b>▶ Rodar</b>.`; return; }
+  const t = final ? `<b>Resultado final</b> após ${step.toLocaleString('pt-BR')} cópias: `
+    : `Após ${step.toLocaleString('pt-BR')} cópias: `;
+  el.innerHTML = t + `aderência <b>${(adh*100).toFixed(1)}%</b>, <b>${nreg}</b> regiões — ${frag}; ` + dom + `. ` +
+    (P.eps === 0 ? `Com ε=0 toda interação copia: o consenso era inevitável (Axelrod 1997).`
+    : P.eps >= 0.6 ? `Com ε alto, quase ninguém se entende: fragmentação máxima e cópias raríssimas (Castellano et al. 2000).`
+    : `Com ε=${P.eps}, parecidos convergem e diferentes coexistem: polarização global (Axelrod 1997).`);
+}
+function toggle() {
+  running = !running;
+  frame = 0;
+  document.getElementById('play').textContent = running ? '⏸ Pausar' : '▶ Rodar';
+  if (running) loop();
+  else drawMetrics(false);
+}
+let frame = 0;
+function loop() {
+  if (!running) return;
+  advance(P.speed * P.N);
+  drawGrid();
+  frame++;
+  if (frame % 5 === 0) drawMetrics(false);
+  else document.getElementById('sStep').textContent = step.toLocaleString('pt-BR');
+  requestAnimationFrame(loop);
+}
+function preset(F, Q, eps) {
+  P.F = F; P.Q = Q; P.eps = eps;
+  document.getElementById('pF').value = F; document.getElementById('vF').textContent = F;
+  document.getElementById('pQ').value = Q; document.getElementById('vQ').textContent = Q;
+  document.getElementById('pE').value = eps; document.getElementById('vE').textContent = eps.toFixed(2);
+  running = false;
+  document.getElementById('play').textContent = '▶ Rodar';
+  reset();
+}
+function showTab(name, btn) {
+  document.querySelectorAll('.tabpanel').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+reset();
+</script>
+</body>
+</html>
