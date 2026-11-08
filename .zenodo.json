@@ -1,0 +1,23 @@
+{
+  "title": "CulturalDynamics v1.3.1 — ABM de difusão cultural e adesão a normas",
+  "description": "Simulador exploratório em Julia/Agents.jl: modelo tipo Axelrod com confiança limitada, fadiga, turnos, papéis, treinamento e um gestor com Q-learning. Calibrado em momentos públicos de higiene das mãos. Inclui suíte de testes, gates locais, demo HTML standalone e documentação ODD/TRACE.",
+  "creators": [
+    {
+      "name": "Prestes, José Augusto de Lima",
+      "orcid": "0000-0001-8686-5360"
+    }
+  ],
+  "license": "MIT",
+  "keywords": [
+    "agent-based modeling",
+    "cultural diffusion",
+    "compliance",
+    "hand hygiene",
+    "Julia",
+    "reproducibility"
+  ],
+  "version": "v1.3.1",
+  "upload_type": "software",
+  "access_right": "open",
+  "language": "por"
+}

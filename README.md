@@ -6,7 +6,7 @@
 > [Limites metodológicos](#limites-metodologicos).
 
 ![License](https://img.shields.io/badge/license-MIT-blue)
-![Version](https://img.shields.io/badge/version-1.3.0-blue)
+![Version](https://img.shields.io/badge/version-1.3.1-blue)
 ![Tests](https://img.shields.io/badge/tests-268%2F268-brightgreen)
 ![Gates](https://img.shields.io/badge/gates-9%2F9-brightgreen)
 ![ORCID](https://img.shields.io/badge/ORCID-0000--0001--8686--5360-green)

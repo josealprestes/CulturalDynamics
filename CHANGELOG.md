@@ -6,6 +6,8 @@ versionamento semântico.
 
 ## [Unreleased]
 
+## [1.3.1] — 2026-11-08
+
 ### Added
 
 - Demo didática standalone `apresentacao/axelrod.html`, com quatro presets
@@ -46,6 +48,12 @@ versionamento semântico.
 - `DATASETS.md`, `TRACE.md` e documentação viva sincronizados com as
   contagens atuais.
 - `CITATION.cff` sem DOI placeholder.
+
+### Changed
+
+- Primeira versão publicada: repositório público com código, demo, testes e documentação
+  de modelo (manuscrito e material de revisão ficam no repositório privado).
+- `.zenodo.json` do software incluído para o depósito com DOI.
 
 ## [1.3.0] — 2026-09-18
 

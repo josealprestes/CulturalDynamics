@@ -89,7 +89,6 @@ def g4():
         "README.md": ["268", "27"],
         "CHANGELOG.md": ["268"],
         "DATASETS.md": ["27", "268"],
-        "CITATION.cff": ["1.3.0"],
     }
     missing = []
     for rel, tokens in need.items():
@@ -97,8 +96,25 @@ def g4():
         for t in tokens:
             if t not in src:
                 missing.append(f"{rel}:{t!r}")
-    gate("G4", "public count reconciliation", not missing,
-         "; ".join(missing) if missing else "README/CHANGELOG/DATASETS consistent")
+    # A versao NAO e literal do gate: sai do Project.toml e tem de casar em CITATION.cff,
+    # no badge do README e no heading da release mais nova do CHANGELOG. Versao literal
+    # apodrece calada (o gate segue verde enquanto os arquivos divergem entre si).
+    m = re.search(r'^version\s*=\s*"([0-9]+\.[0-9]+\.[0-9]+)"', read("Project.toml"), re.M)
+    if not m:
+        missing.append("Project.toml:version")
+    else:
+        v = m.group(1)
+        if f"version: {v}" not in read("CITATION.cff"):
+            missing.append(f"CITATION.cff:version!={v}")
+        if f"version-{v}-" not in read("README.md"):
+            missing.append(f"README.md:badge!={v}")
+        rels = re.findall(r"^## \[([0-9]+\.[0-9]+\.[0-9]+)\]", read("CHANGELOG.md"), re.M)
+        if not rels:
+            missing.append("CHANGELOG.md:release-heading")
+        elif max(rels, key=lambda x: tuple(int(i) for i in x.split("."))) != v:
+            missing.append(f"CHANGELOG.md:release!={v}")
+    gate("G4", "count + version reconciliation", not missing,
+         "; ".join(missing) if missing else "README/CHANGELOG/DATASETS/versao consistentes")
 
 
 def g5():
